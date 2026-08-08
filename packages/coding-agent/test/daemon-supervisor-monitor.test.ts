@@ -3578,6 +3578,9 @@ describe("daemon worker supervisor monitoring", () => {
 				recoveryJournalPath: string;
 				orphanProcessJournalPath: string;
 			};
+			snapshotCache: Map<string, unknown>;
+			transcriptCaches: Map<string, unknown>;
+			snapshotGenerations: Map<string, unknown>;
 		};
 		const root = mkdtempSync(join(tmpdir(), "prime-supervisor-recovery-test-"));
 		const journalPath = join(root, "worker.recovery.jsonl");
@@ -3616,6 +3619,9 @@ describe("daemon worker supervisor monitoring", () => {
 				recoveryJournalPath: journalPath,
 				orphanProcessJournalPath: orphanJournalPath,
 			},
+			snapshotCache: new Map(),
+			transcriptCaches: new Map(),
+			snapshotGenerations: new Map(),
 		};
 		const markInterrupted = vi.fn(async () => undefined);
 		const kill = vi.spyOn(process, "kill").mockReturnValue(true);
