@@ -1433,6 +1433,7 @@ export class AgentDaemon {
 			extensionUiRequests: new Map(),
 			eventGeneration: createActiveSessionId(),
 			lastEventSequence: 0,
+			snapshotSerial: 0,
 			clientEnv,
 		};
 		this.sessions.set(state.activeSessionId, state);
@@ -3900,7 +3901,7 @@ export class AgentDaemon {
 					});
 				}
 				if (streamsSnapshot) {
-					const snapshotId = `${state.activeSessionId}-${state.eventGeneration}-${state.lastEventSequence}`;
+					const snapshotId = `${state.activeSessionId}-${state.eventGeneration}-${state.lastEventSequence}-${state.snapshotSerial++}`;
 					let transcript: SnapshotTranscriptChunkSource;
 					try {
 						transcript = createSnapshotTranscriptChunks({
@@ -6656,7 +6657,7 @@ export class AgentDaemon {
 		state: ActiveSessionState,
 		message: Extract<DaemonOutbound, { type: "session_replaced" }>,
 	): void {
-		const snapshotId = `${state.activeSessionId}-${state.eventGeneration}-${state.lastEventSequence}`;
+		const snapshotId = `${state.activeSessionId}-${state.eventGeneration}-${state.lastEventSequence}-${state.snapshotSerial++}`;
 		// Mark before the registry read so later events queue behind this snapshot.
 		const snapshotSignal = markClientSnapshotStreaming(client, state.activeSessionId);
 		void this.prepareReplacementSnapshot(client, state, message, snapshotId, snapshotSignal).catch((error) => {
@@ -6854,7 +6855,7 @@ export class AgentDaemon {
 							),
 						});
 					}
-					const snapshotId = `${activeSessionId}-${state.eventGeneration}-${state.lastEventSequence}`;
+					const snapshotId = `${activeSessionId}-${state.eventGeneration}-${state.lastEventSequence}-${state.snapshotSerial++}`;
 					const snapshotSignal = markClientSnapshotStreaming(client, activeSessionId);
 					let transcript: SnapshotTranscriptChunkSource;
 					try {
