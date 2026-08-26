@@ -3123,7 +3123,7 @@ export class DaemonSupervisor {
 					}
 					const recoveryCommand = worker.descriptor.ownerClientId ? worker.transientCreateCommand : undefined;
 					if (!recoveryCommand || !worker.launchEnv) {
-						await this.recoverUncertainWorkerOperations(worker, false);
+						await this.recoverUncertainWorkerOperations(worker, false, false);
 						worker.descriptor.lifecycle = "failed";
 						worker.descriptor.lastError = "Waiting for a client with fresh runtime context";
 						this.persistWorker(worker);
@@ -3179,13 +3179,17 @@ export class DaemonSupervisor {
 		);
 	}
 
-	private async recoverUncertainWorkerOperations(worker: ResidentWorker, killWorkerProcess = true): Promise<void> {
+	private async recoverUncertainWorkerOperations(
+		worker: ResidentWorker,
+		killWorkerProcess = true,
+		reapOrphanProcesses = true,
+	): Promise<void> {
 		await this.assertRecoveryAllowed();
 		if (killWorkerProcess) {
 			signalProcessGroupOrProcess(worker.descriptor.pid, "SIGKILL");
 		}
 		const orphanProcessJournalPath = worker.descriptor.orphanProcessJournalPath;
-		if (orphanProcessJournalPath) {
+		if (reapOrphanProcesses && orphanProcessJournalPath) {
 			try {
 				for (const orphan of readActiveOrphanProcesses(orphanProcessJournalPath, worker.descriptor.pid)) {
 					if (!isOrphanProcessIdentityCurrent(orphan)) {

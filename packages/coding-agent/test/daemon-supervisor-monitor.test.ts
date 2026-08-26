@@ -1623,7 +1623,7 @@ describe("daemon worker supervisor monitoring", () => {
 		await recovery;
 
 		expect(supervisor.connectWorker).not.toHaveBeenCalled();
-		expect(supervisor.recoverUncertainWorkerOperations).toHaveBeenCalledWith(worker, false);
+		expect(supervisor.recoverUncertainWorkerOperations).toHaveBeenCalledWith(worker, false, false);
 		expect(supervisor.launchWorker).not.toHaveBeenCalled();
 		expect(worker.descriptor.lifecycle).toBe("failed");
 		expect(supervisor.persistWorker).toHaveBeenCalledWith(worker);
@@ -3655,7 +3655,11 @@ describe("daemon worker supervisor monitoring", () => {
 			log: vi.fn(),
 			assertRecoveryAllowed: vi.fn(async () => {}),
 		}) as {
-			recoverUncertainWorkerOperations(worker: RecoveryWorker, killWorkerProcess: boolean): Promise<void>;
+			recoverUncertainWorkerOperations(
+				worker: RecoveryWorker,
+				killWorkerProcess: boolean,
+				reapOrphanProcesses: boolean,
+			): Promise<void>;
 		};
 
 		const invalidationError = "Worker recovery dropped uncertain operations; snapshot cache invalidated";
@@ -3667,8 +3671,9 @@ describe("daemon worker supervisor monitoring", () => {
 		);
 
 		try {
-			await supervisor.recoverUncertainWorkerOperations(worker, false);
+			await supervisor.recoverUncertainWorkerOperations(worker, false, false);
 			expect(kill).not.toHaveBeenCalled();
+			expect(existsSync(orphanJournalPath)).toBe(true);
 			expect(markInterrupted).toHaveBeenCalledTimes(1);
 			expect(markInterrupted).toHaveBeenCalledWith("/tmp/root.jsonl", "root-active", ["model_stream"]);
 			for (const activeSessionId of ["root-active", "child-active"]) {
