@@ -1869,7 +1869,10 @@ export class DaemonSupervisor {
 					return this.forwardToWorker(match.worker, command);
 				}
 				const workers = [...this.workers.values()].filter(
-					(worker) => this.isLiveWorker(worker) && worker.descriptor.lifecycle !== "failed",
+					(worker) =>
+						this.isLiveWorker(worker) &&
+						worker.descriptor.lifecycle !== "failed" &&
+						worker.descriptor.lifecycle !== "starting",
 				);
 				const heartbeats = new Map<string, AgentConnectionHeartbeat>();
 				const snapshots: Array<{ heartbeats?: AgentConnectionHeartbeat[]; response?: DaemonResponse }> =
