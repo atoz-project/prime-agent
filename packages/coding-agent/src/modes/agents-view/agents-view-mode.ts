@@ -1796,6 +1796,11 @@ export class AgentsViewMode implements Component, Focusable {
 				}
 			}
 		} catch (error) {
+			// If the daemon connection was lost, trigger a reconnect instead of just showing the error.
+			if (error instanceof Error && error.message.includes("Prime Agent daemon is not connected")) {
+				const client = this.client;
+				if (client) this.startClientReconnect(client, error);
+			}
 			this.setStatusMessage(formatError(`Failed to run /${command.name}`, error));
 			return false;
 		}
