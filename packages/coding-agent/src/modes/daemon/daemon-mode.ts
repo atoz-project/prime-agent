@@ -3767,6 +3767,13 @@ export class AgentDaemon {
 				return undefined;
 			case "list": {
 				const activeSessions = Array.from(this.sessions.values());
+				if (command.activeOnly) {
+					// Adoption only needs resident sessions. Skip saved-session, cron,
+					// and passive-subagent discovery, which can walk a large artifact tree.
+					return success(command.id, "list", {
+						sessions: buildSessionList(activeSessions, [], []),
+					});
+				}
 				const scheduledJobs = this.cronStore.list();
 				if (!command.all) {
 					return success(command.id, "list", {

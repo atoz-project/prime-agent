@@ -1902,6 +1902,47 @@ describe("daemon worker supervisor monitoring", () => {
 		expect(supervisor.effectiveWorkerState(worker)).toBe("ready");
 	});
 
+	it("uses the in-memory session list while adopting a live worker", async () => {
+		const request = vi.fn(async () => ({ success: true, data: { sessions: [] } }));
+		const worker = {
+			descriptor: { workerId: "worker-adoption-list" },
+			client: { request },
+			summaries: new Map(),
+		};
+		const supervisor = Object.assign(Object.create(DaemonSupervisor.prototype), {
+			isWorkerStopping: vi.fn(() => false),
+			assertRecoveryAllowed: vi.fn(async () => undefined),
+		}) as {
+			refreshWorkerSummaries(target: typeof worker, recovery: boolean): Promise<void>;
+		};
+
+		await supervisor.refreshWorkerSummaries(worker, true);
+
+		expect(request).toHaveBeenCalledWith({ type: "list", activeOnly: true }, 30_000);
+	});
+
+	it("keeps mixed-version worker adoption compatible", async () => {
+		const request = vi.fn(async (command: { activeOnly?: boolean }, timeoutMs: number) => {
+			// Old workers ignore unknown fields and execute the full list path.
+			expect(command.activeOnly).toBe(true);
+			expect(timeoutMs).toBeGreaterThan(5000);
+			return { success: true, data: { sessions: [] } };
+		});
+		const worker = {
+			descriptor: { workerId: "worker-old-list" },
+			client: { request },
+			summaries: new Map(),
+		};
+		const supervisor = Object.assign(Object.create(DaemonSupervisor.prototype), {
+			isWorkerStopping: vi.fn(() => false),
+			assertRecoveryAllowed: vi.fn(async () => undefined),
+		}) as {
+			refreshWorkerSummaries(target: typeof worker, recovery: boolean): Promise<void>;
+		};
+
+		await expect(supervisor.refreshWorkerSummaries(worker, true)).resolves.toBeUndefined();
+	});
+
 	it("keeps stopping workers listed with an honest state for busy-daemon checks", async () => {
 		const makeWorker = (workerId: string, stopRequestedAt?: string) => ({
 			descriptor: {

@@ -67,8 +67,9 @@ export const DAEMON_COMMAND_ENVELOPE_MIN_PROTOCOL_VERSION = 7;
 // Revision 20 lets cancellation target a prompt the session owns but has not started.
 // Revision 21 adds capability-gated, session-scoped ACP MCP server replacement.
 // Revision 22 scopes ACP MCP replacement and cleanup to a connection owner.
-export const DAEMON_SCHEMA_REVISION = 22;
-export const DAEMON_SCHEMA_ID = "protocol-7-schema-22-4d515169dc6b";
+// Revision 23 adds an active-only list scope for worker adoption.
+export const DAEMON_SCHEMA_REVISION = 23;
+export const DAEMON_SCHEMA_ID = "protocol-7-schema-23-09f5ccb1bea6";
 
 export type DaemonProtocolName = typeof DAEMON_PROTOCOL_NAME;
 export type DaemonProtocolVersion = number;
@@ -372,6 +373,9 @@ export type DaemonCommand =
 			id?: string;
 			type: "list";
 			all?: boolean;
+			// Adoption scope: enumerate resident sessions without saved-session or
+			// passive-descendant catalog scans.
+			activeOnly?: boolean;
 			cwd?: string;
 			sessionDir?: string;
 			includeClientOwned?: boolean;

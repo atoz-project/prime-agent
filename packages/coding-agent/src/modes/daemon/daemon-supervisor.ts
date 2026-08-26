@@ -138,6 +138,7 @@ type DaemonCommandBody = DistributiveOmit<DaemonCommand, "id">;
 const structuredLog = getLogger("coding-agent.daemon-supervisor");
 const WORKER_CONNECT_TIMEOUT_MS = 30_000;
 const WORKER_REQUEST_TIMEOUT_MS = 24 * 60 * 60 * 1000;
+const WORKER_RECOVERY_LIST_TIMEOUT_MS = 30_000;
 const INPUT_PAUSE_CLEANUP_TIMEOUT_MS = 5_000;
 const UPDATE_RESTART_MUTATION_DRAIN_TIMEOUT_MS = 80_000;
 const UPDATE_RESTART_WORKER_REQUEST_TIMEOUT_MS = 90_000;
@@ -3278,7 +3279,13 @@ export class DaemonSupervisor {
 		if (!worker.client) {
 			throw new Error("Session worker is not connected");
 		}
-		const response = await worker.client.request({ type: "list" }, 5000);
+		// New workers skip passive descendants during adoption. Old workers ignore
+		// activeOnly, so give their full list enough time instead of abandoning a
+		// healthy process during a mixed-version restart.
+		const response = await worker.client.request(
+			recovery ? { type: "list", activeOnly: true } : { type: "list" },
+			recovery ? WORKER_RECOVERY_LIST_TIMEOUT_MS : 5000,
+		);
 		const summaries = sessionSummariesFromResponse(response);
 		worker.summaries = new Map(summaries.map((summary) => [summary.activeSessionId ?? summary.id, summary]));
 		for (const summary of summaries) {

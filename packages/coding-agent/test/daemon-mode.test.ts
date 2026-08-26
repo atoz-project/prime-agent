@@ -5395,18 +5395,14 @@ describe("daemon mode helpers", () => {
 
 			const activeOnlyResponse = (await internals.handleCommand(
 				makeClient("client-2", parentState.activeSessionId),
-				{ type: "list" },
+				{ type: "list", activeOnly: true },
 			)) as { data: { sessions: Array<Record<string, unknown>> } };
-			expect(activeOnlyResponse.data.sessions).toEqual(
-				expect.arrayContaining([
-					expect.objectContaining({ sessionFile: fixture.childSessionFile, rlmChildId: fixture.childId }),
-					expect.objectContaining({
-						sessionFile: fixture.grandchildSessionFile,
-						rlmChildId: fixture.grandchildId,
-						parentSessionPath: fixture.childSessionFile,
-					}),
-				]),
-			);
+			expect(activeOnlyResponse.data.sessions).toEqual([
+				expect.objectContaining({
+					activeSessionId: parentState.activeSessionId,
+					sessionFile: fixture.parentSessionFile,
+				}),
+			]);
 		} finally {
 			rmSync(tempDir, { recursive: true, force: true });
 		}
