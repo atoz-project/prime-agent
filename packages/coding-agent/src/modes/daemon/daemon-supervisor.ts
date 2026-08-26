@@ -749,7 +749,16 @@ export class DaemonSupervisor {
 			this.markReady();
 		} catch (error) {
 			const startupError = error instanceof Error ? error : new Error(String(error));
-			this.log(`Daemon supervisor startup failed: ${startupError.stack ?? startupError.message}`);
+			// Suppress the noisy log when we lost a spawn race: another supervisor
+			// holds the lock and will serve clients. Exiting quietly is correct.
+			const isLockRace =
+				typeof startupError === "object" &&
+				startupError !== null &&
+				"code" in startupError &&
+				(startupError as NodeJS.ErrnoException).code === "ELOCKED";
+			if (!isLockRace) {
+				this.log(`Daemon supervisor startup failed: ${startupError.stack ?? startupError.message}`);
+			}
 			await this.cleanupSupervisorResources();
 			this.rejectReady(startupError);
 			throw startupError;
